@@ -203,6 +203,30 @@ def coverage_percent(covered: int, total: int) -> float:
     return 100.0 * covered / total
 
 
+def parse_cobertura(text: str) -> dict[str, dict[int, tuple[int, int]]]:
+    """Coverlet line hits, keyed by the class filename."""
+
+    try:
+        root = ET.fromstring(text)
+    except ET.ParseError:
+        return {}
+    if root.tag != "coverage":
+        return {}
+    found: dict[str, dict[int, tuple[int, int]]] = {}
+    for cls in root.iter("class"):
+        filename = cls.get("filename")
+        if not filename:
+            continue
+        lines = found.setdefault(filename.replace("\\", "/"), {})
+        for line in cls.iter("line"):
+            number = line.get("number")
+            if not number:
+                continue
+            hits = int(line.get("hits") or "0")
+            lines[int(number)] = (1 if hits > 0 else 0, 1)
+    return found
+
+
 def percent_for_range(lines: dict[int, tuple[int, int]] | None, start: int, end: int) -> float | None:
     if lines is None:
         return None
@@ -440,6 +464,7 @@ def parse_jacoco_index(text: str) -> dict[str, list[JacocoMethod]]:
 @dataclass
 class CoverageBundle:
     lcov: dict[str, dict[int, tuple[int, int]]] = field(default_factory=dict)
+    cobertura: dict[str, dict[int, tuple[int, int]]] = field(default_factory=dict)
     go_profile: dict[str, list[tuple[int, int, int, int]]] | None = None
     jacoco: dict[str, list[JacocoMethod]] | None = None
     form_html: dict[str, dict[int, tuple[int, int]]] = field(default_factory=dict)
@@ -469,6 +494,10 @@ class CoverageBundle:
             return _jacoco_from_index(
                 self.jacoco or {}, names, function.name, function.start_line
             )
+        if function.language == "csharp":
+            record = self._cobertura_lines(function.path)
+            if record is not None:
+                return percent_for_range(record, function.start_line, function.end_line)
         if function.language == "go":
             segments = self._go_segments(function.path)
             return _segments_percent(segments, function.start_line, function.end_line)
@@ -499,6 +528,9 @@ class CoverageBundle:
 
     def _lcov_lines(self, path: str) -> dict[int, tuple[int, int]] | None:
         return _lookup(self.lcov, path, self.source_parts)
+
+    def _cobertura_lines(self, path: str) -> dict[int, tuple[int, int]] | None:
+        return _lookup(self.cobertura, path, self.source_parts)
 
 
 def _lookup(index: dict[str, dict], source_path: str, source_parts: list[tuple[str, ...]]):
@@ -584,11 +616,20 @@ def _merge_forms(root: Path) -> dict[str, dict[int, tuple[int, int]]]:
     return found
 
 
+def _merge_cobertura(root: Path) -> dict[str, dict[int, tuple[int, int]]]:
+    merged: dict[str, dict[int, tuple[int, int]]] = {}
+    for text in _merge_texts(list(root.glob("**/coverage.cobertura.xml"))):
+        for filename, lines in parse_cobertura(text).items():
+            merged.setdefault(filename, {}).update(lines)
+    return merged
+
+
 def load_bundle(root: Path) -> CoverageBundle:
     go_profile = _merge_go(root)
     jacoco = _merge_jacoco(root)
     return CoverageBundle(
         lcov=_merge_lcov(root),
+        cobertura=_merge_cobertura(root),
         go_profile=go_profile or None,
         jacoco=jacoco or None,
         form_html=_merge_forms(root),

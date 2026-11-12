@@ -1,6 +1,6 @@
 # crapper
 
-CRAP scores for Clojure, Java, Go, TypeScript, Rust, and Python. One run detects the language of each source file, applies that language's complexity and coverage rules, and writes the snapshot [uml-viewer](https://github.com/unclebob/uml-viewer) already reads.
+CRAP scores for Clojure, Java, C#, Go, TypeScript, Rust, and Python. One run detects the language of each source file, applies that language's complexity and coverage rules, and writes the snapshot [uml-viewer](https://github.com/unclebob/uml-viewer) already reads.
 
 The formula is the one from [crap4clj](https://github.com/unclebob/crap4clj), [crap4java](https://github.com/unclebob/crap4java), and [crap4go](https://github.com/unclebob/crap4go):
 
@@ -48,6 +48,7 @@ uml-viewer groups entries by `:namespace` and joins each operation on `:name`. `
 | --- | --- | --- |
 | Clojure | the `ns` | the `defn` / `defn-` name |
 | Java | `package.Class`, or `package.Outer.Inner` | the method name |
+| C# | `Namespace.Class`, or `Namespace.Outer.Inner` | the method or local function name |
 | Go | the package import path, or `import/path.Receiver` | the function or method name |
 | TypeScript | the dotted module path, or `module.Class` | the function or method name |
 | Rust | `crate::module`, or `crate::module::Type` | the function or method name |
@@ -60,6 +61,8 @@ Rename or move is a new entry. There is no identity matching across runs.
 Clojure follows crap4clj: `if` / `when` and their variants, `and`, `or`, `loop`, `catch`, and each clause of `cond`, `condp`, `case`, `cond->`, `cond->>`, `some->`, and `some->>`. Coverage prefers Cloverage's per-line form counts and falls back to LCOV.
 
 Java follows crap4java: `if`, loops, `catch`, `?:`, each `switch` label, and `&&` / `||`. Constructors and methods inside anonymous classes are omitted. Coverage is JaCoCo's `INSTRUCTION` counter.
+
+C# counts the same decisions: `if`, loops, `catch`, `?:`, each `switch` section, and `&&` / `||`. Constructors and lambdas are omitted. A local function is its own entry, and its decisions are not charged to the enclosing method. Coverage is an existing Coverlet `coverage.cobertura.xml` anywhere under the project. crapper does not run `dotnet test`. A method that report does not mention scores 0%, the same rule as the other languages.
 
 Go follows crap4go: `if`, `for`, `range`, each `switch` and `select` clause, and `&&` / `||`. Coverage is `go test -coverprofile`, which names each file by its module import path (the `module` line of the nearest `go.mod` plus the path inside that module). crapper and mutator look a file up by that name first, then by the longest matching path suffix.
 

@@ -12,6 +12,7 @@ from crapper.coverage import CoverageBundle, load_bundle
 from crapper.discover import (
     CLOJURE_TEST_SUFFIXES,
     GO_TEST_SUFFIX,
+    CSHARP_TEST_SUFFIXES,
     JS_TEST_SUFFIXES,
     SKIP_DIRS,
     TEST_DIRS,
@@ -29,6 +30,7 @@ _TEST_PATTERNS = ", ".join(
         f"*{GO_TEST_SUFFIX}",
         *[f"*{suffix}" for suffix in CLOJURE_TEST_SUFFIXES],
         *[f"*{suffix}" for suffix in JS_TEST_SUFFIXES],
+        *[f"*{suffix}" for suffix in CSHARP_TEST_SUFFIXES],
         "test_*.py",
         "*_test.py",
         "conftest.py",
@@ -42,7 +44,7 @@ Detect the language of each source file and score it with the CRAP metric
 CRAP = CC² × (1 − coverage)³ + CC. Writes .metrics/crap.edn for uml-viewer
 and prints a report sorted worst first.
 
-Languages: Clojure (.clj .cljc .cljs .bb), Java (.java), Go (.go),
+Languages: Clojure (.clj .cljc .cljs .bb), Java (.java), C# (.cs), Go (.go),
 TypeScript and JavaScript (.ts .tsx .mts .cts .js .jsx .mjs .cjs),
 Rust (.rs), Python (.py).
 

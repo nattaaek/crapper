@@ -9,6 +9,7 @@ EXTENSIONS = {
     ".cljs": "clojure",
     ".bb": "clojure",
     ".java": "java",
+    ".cs": "csharp",
     ".go": "go",
     ".ts": "typescript",
     ".tsx": "typescript",
@@ -34,6 +35,8 @@ SKIP_DIRS = {
     "target",
     "dist",
     "build",
+    "bin",
+    "obj",
     "out",
     "coverage",
     ".metrics",
@@ -46,6 +49,7 @@ TEST_DIRS = {"test", "tests", "spec", "specs", "__tests__"}
 
 GO_TEST_SUFFIX = "_test.go"
 CLOJURE_TEST_SUFFIXES = ("_test.clj", "_test.cljc", "_test.cljs", "_test.bb")
+CSHARP_TEST_SUFFIXES = ("Test.cs", "Tests.cs")
 JS_TEST_SUFFIXES = (
     ".test.ts",
     ".spec.ts",
@@ -82,6 +86,8 @@ def is_test_file(path: str | Path) -> bool:
     if name.endswith(CLOJURE_TEST_SUFFIXES):
         return True
     if name.endswith(JS_TEST_SUFFIXES):
+        return True
+    if name.endswith(CSHARP_TEST_SUFFIXES):
         return True
     if name == "conftest.py":
         return True
